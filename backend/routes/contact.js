@@ -121,12 +121,62 @@ router.post("/", async (req, res) => {
       message: "Your message has been sent successfully.",
     });
   } catch (mailErr) {
-    // Log internal error on server side only (do not expose credentials or SMTP internals)
+    // Log internal error on server side
     console.error("[Email Error] Failed to send contact email:", mailErr.message);
 
     return res.status(500).json({
       success: false,
       message: "Unable to send your message right now. Please try again later.",
+      errorDetails: mailErr.message,
+    });
+  }
+});
+
+/**
+ * GET /contact/diagnose
+ * Diagnostic endpoint to check environment variables and SMTP status.
+ */
+router.get("/diagnose", async (req, res) => {
+  const user = process.env.MAIL_USER;
+  const pass = process.env.MAIL_PASS;
+  const host = process.env.MAIL_HOST || "smtp.gmail.com";
+  const port = Number(process.env.MAIL_PORT) || 465;
+
+  const status = {
+    hasMailUser: Boolean(user),
+    mailUserMasked: user ? `${user.substring(0, 3)}...${user.slice(-10)}` : null,
+    hasMailPass: Boolean(pass),
+    mailPassLength: pass ? pass.length : 0,
+    mailHost: host,
+    mailPort: port,
+    nodeEnv: process.env.NODE_ENV,
+    frontendUrl: process.env.FRONTEND_URL,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (!user || !pass) {
+    return res.status(500).json({
+      success: false,
+      diagnostic: status,
+      error: "Missing MAIL_USER or MAIL_PASS in environment variables.",
+    });
+  }
+
+  try {
+    const { createTransporter } = require("../utils/mailer");
+    const transporter = createTransporter();
+    await transporter.verify();
+    return res.status(200).json({
+      success: true,
+      diagnostic: status,
+      smtpConnection: "Connected successfully to Gmail SMTP!",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      diagnostic: status,
+      smtpConnectionError: err.message,
+      code: err.code,
     });
   }
 });
