@@ -1,8 +1,14 @@
 /**
  * Centralized API configuration and client helpers for the portfolio.
- * Reuses environment configuration with clean fallback to local backend or production Render service.
+ *
+ * IMPORTANT — Environment Variables Required:
+ *   Vercel  → Set VITE_API_URL = your Render backend URL
+ *             e.g. https://portfolio-contact-api.onrender.com
+ *   Local   → Create frontend/.env.local with VITE_API_URL=http://localhost:1268
+ *             (or leave unset — localhost:1268 is the automatic dev fallback)
  */
 
+// Priority: VITE_API_URL env var → localhost in dev → hardcoded Render fallback
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV
@@ -24,19 +30,29 @@ export const CONTACT_ENDPOINT = `${API_BASE_URL.replace(/\/+$/, '')}/contact`;
  */
 export async function sendContactMessage(data) {
   try {
-    const response = await fetch(CONTACT_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: data.name?.trim(),
-        email: data.email?.trim(),
-        subject: data.subject?.trim(),
-        message: data.message?.trim(),
-        ...(data.phone ? { phone: String(data.phone).trim() } : {}),
-      }),
-    });
+    // 30-second timeout to handle Render free-tier cold starts (backend may sleep after inactivity)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    let response;
+    try {
+      response = await fetch(CONTACT_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name?.trim(),
+          email: data.email?.trim(),
+          subject: data.subject?.trim(),
+          message: data.message?.trim(),
+          ...(data.phone ? { phone: String(data.phone).trim() } : {}),
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     let result;
     try {
@@ -63,6 +79,14 @@ export async function sendContactMessage(data) {
       message: result?.message || 'Your message has been sent successfully.',
     };
   } catch (error) {
+    // AbortError means our 30s timeout fired (Render cold start took too long)
+    if (error?.name === 'AbortError') {
+      return {
+        success: false,
+        message:
+          'The server is waking up (it sleeps when idle). Please wait 30 seconds and try again.',
+      };
+    }
     return {
       success: false,
       message:

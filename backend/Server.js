@@ -9,6 +9,7 @@ const app = express();
 const port = process.env.PORT || 1268;
 
 // Allowed Origins for CORS
+// Base allowed origins (always permitted)
 const allowedOrigins = [
   "https://raishivam8.github.io",
   "http://localhost:5173",
@@ -16,28 +17,49 @@ const allowedOrigins = [
   "http://127.0.0.1:5173",
 ];
 
+// Support multiple comma-separated URLs in FRONTEND_URL env var
+// e.g. FRONTEND_URL=https://my-portfolio.vercel.app,https://raishivam8.github.io
 if (process.env.FRONTEND_URL) {
-  // Normalize by stripping trailing slash
-  const customFrontend = process.env.FRONTEND_URL.replace(/\/+$/, "");
-  if (!allowedOrigins.includes(customFrontend)) {
-    allowedOrigins.push(customFrontend);
-  }
+  const urls = process.env.FRONTEND_URL.split(",").map((u) => u.trim().replace(/\/+$/, ""));
+  urls.forEach((url) => {
+    if (url && !allowedOrigins.includes(url)) {
+      allowedOrigins.push(url);
+    }
+  });
 }
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    // Allow requests with no origin (mobile apps, curl, Render health checks)
     if (!origin) return callback(null, true);
 
-    // In development mode, allow localhost and any local origins
-    if (process.env.NODE_ENV !== "production") {
+    const normalizedOrigin = origin.replace(/\/+$/, "");
+
+    // Always allow localhost origins for local development
+    if (
+      normalizedOrigin.startsWith("http://localhost") ||
+      normalizedOrigin.startsWith("http://127.0.0.1")
+    ) {
       return callback(null, true);
     }
 
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
+    // Allow any Vercel deployment (covers preview and production URLs)
+    if (
+      normalizedOrigin.endsWith(".vercel.app") ||
+      normalizedOrigin.endsWith(".vercel.com")
+    ) {
       return callback(null, true);
     }
 
+    // Check explicit allowed origins list
+    if (
+      allowedOrigins.includes(normalizedOrigin) ||
+      allowedOrigins.includes(origin)
+    ) {
+      return callback(null, true);
+    }
+
+    console.warn("[CORS] Blocked origin:", origin);
     return callback(new Error("CORS policy: Not allowed by CORS for origin " + origin));
   },
   methods: ["GET", "POST", "OPTIONS"],
