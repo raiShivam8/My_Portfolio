@@ -13,7 +13,7 @@ export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV
     ? 'http://localhost:1268'
-    : 'https://portfolio-backend-render.onrender.com');
+    : 'https://my-portfolio-svqe.onrender.com');
 
 export const CONTACT_ENDPOINT = `${API_BASE_URL.replace(/\/+$/, '')}/contact`;
 

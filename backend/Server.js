@@ -12,6 +12,7 @@ const port = process.env.PORT || 1268;
 // Base allowed origins (always permitted)
 const allowedOrigins = [
   "https://raishivam8.github.io",
+  "https://myportfolio-rust-three-36.vercel.app",
   "http://localhost:5173",
   "http://localhost:3000",
   "http://127.0.0.1:5173",
