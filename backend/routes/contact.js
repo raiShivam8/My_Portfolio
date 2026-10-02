@@ -143,6 +143,7 @@ router.get("/diagnose", async (req, res) => {
   const port = Number(process.env.MAIL_PORT) || 465;
 
   const status = {
+    hasResendApiKey: Boolean(process.env.RESEND_API_KEY),
     hasMailUser: Boolean(user),
     mailUserMasked: user ? `${user.substring(0, 3)}...${user.slice(-10)}` : null,
     hasMailPass: Boolean(pass),
@@ -153,6 +154,14 @@ router.get("/diagnose", async (req, res) => {
     frontendUrl: process.env.FRONTEND_URL,
     timestamp: new Date().toISOString(),
   };
+
+  if (process.env.RESEND_API_KEY) {
+    return res.status(200).json({
+      success: true,
+      diagnostic: status,
+      emailProvider: "Resend HTTPS API (Port 443 - Active)",
+    });
+  }
 
   if (!user || !pass) {
     return res.status(500).json({
