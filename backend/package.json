@@ -1,0 +1,29 @@
+{
+  "name": "portfolio-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Shivam Rai Portfolio with Gmail Nodemailer integration",
+  "main": "Server.js",
+  "scripts": {
+    "start": "node Server.js",
+    "dev": "node --watch Server.js",
+    "test": "node test-contact.js",
+    "verify": "node verify-smtp.js"
+  },
+  "keywords": [
+    "portfolio",
+    "express",
+    "nodemailer",
+    "gmail",
+    "contact-form"
+  ],
+  "author": "Shivam Rai",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5",
+    "nodemailer": "^6.10.0"
+  }
+}
