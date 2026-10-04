@@ -1,22 +1,23 @@
 /**
  * Centralized API configuration and client helpers for the portfolio.
  *
- * Environment setup:
- *   Production (Vercel) → VITE_API_URL is set in frontend/.env.production
- *                         (committed to git so Vercel picks it up at build time)
- *   Local dev           → Create frontend/.env.local with:
- *                         VITE_API_URL=http://localhost:1268
+ * Backend: https://my-portfolio-svqe.onrender.com (Render)
+ * Frontend: https://myportfolio-rust-three-36.vercel.app (Vercel)
+ *
+ * Local dev: create frontend/.env.local → VITE_API_URL=http://localhost:1268
  */
 
-// VITE_API_URL is always defined via .env.production for production builds.
-// Falls back to localhost for local development if .env.local is not present.
-export const API_BASE_URL = (
-  import.meta.env.VITE_API_URL ||
-  'http://localhost:1268'
-).replace(/\/+$/, '');
+const PRODUCTION_API = 'https://my-portfolio-svqe.onrender.com';
 
+// Sanitize API URL: ignore empty values or the deprecated 'portfolio-backend-render' URL
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const apiUrl =
+  rawApiUrl && !rawApiUrl.includes('portfolio-backend-render')
+    ? rawApiUrl
+    : (import.meta.env.DEV ? 'http://localhost:1268' : PRODUCTION_API);
+
+export const API_BASE_URL = apiUrl.replace(/\/+$/, '');
 export const CONTACT_ENDPOINT = `${API_BASE_URL}/contact`;
-
 
 /**
  * Sends contact message payload to the backend Express service.
@@ -65,8 +66,12 @@ export async function sendContactMessage(data) {
     if (!response.ok) {
       const errorMessage =
         result?.message ||
+        result?.error ||
+        result?.errorDetails ||
         (response.status === 400
           ? 'Please review your entries and try again.'
+          : response.status === 502 || response.status === 503
+          ? 'The server is temporarily busy or waking up. Please try again in 30 seconds.'
           : 'Unable to send your message right now. Please try again later.');
 
       return {

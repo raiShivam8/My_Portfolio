@@ -74,26 +74,23 @@ jobs:
         run: node -e "require('./utils/mailer.js'); require('./routes/contact.js'); console.log('✅ Backend modules load OK')"
 
       - name: 🚀 Trigger Render redeploy
-        # Only runs if RENDER_DEPLOY_HOOK_URL secret is set in GitHub repo
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          echo "Triggering Render backend redeploy..."
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            --request POST \
-            "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
-          if [ "$RESPONSE" -eq 200 ] || [ "$RESPONSE" -eq 201 ]; then
-            echo "✅ Render deploy triggered successfully (HTTP $RESPONSE)"
+          if [ -n "$RENDER_HOOK" ]; then
+            echo "Triggering Render backend redeploy..."
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --request POST "$RENDER_HOOK")
+            if [ "$RESPONSE" -eq 200 ] || [ "$RESPONSE" -eq 201 ]; then
+              echo "✅ Render deploy triggered successfully (HTTP $RESPONSE)"
+            else
+              echo "⚠️ Render deploy hook returned HTTP $RESPONSE (may still be deploying)"
+            fi
           else
-            echo "⚠️ Render deploy hook returned HTTP $RESPONSE (may still be deploying)"
+            echo "ℹ️ RENDER_DEPLOY_HOOK_URL secret not set."
+            echo "Render will auto-redeploy if connected to this GitHub repo natively."
+            echo "To enable: Go to Render Dashboard → your service → Settings → Deploy Hook"
+            echo "Then add the URL as a GitHub secret named RENDER_DEPLOY_HOOK_URL"
           fi
-
-      - name: ℹ️ Render deploy hook not configured
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
-        run: |
-          echo "ℹ️ RENDER_DEPLOY_HOOK_URL secret not set."
-          echo "Render will auto-redeploy if connected to this GitHub repo natively."
-          echo "To enable: Go to Render Dashboard → your service → Settings → Deploy Hook"
-          echo "Then add the URL as a GitHub secret named RENDER_DEPLOY_HOOK_URL"
 
   # ─────────────────────────────────────────────
   # JOB 3: Health check after deploy
