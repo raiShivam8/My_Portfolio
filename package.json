@@ -9,9 +9,13 @@
     "build": "cd frontend && npm install && npm run build",
     "build:frontend": "cd frontend && npm install && npm run build",
     "start:backend": "npm run start --prefix backend",
-    "install:all": "npm install --prefix frontend && npm install --prefix backend"
+    "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "deploy": "vercel --prod"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "vercel": "^62.2.0"
   }
 }
