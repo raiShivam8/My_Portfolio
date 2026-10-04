@@ -10,11 +10,12 @@
 const PRODUCTION_API = 'https://my-portfolio-svqe.onrender.com';
 
 // Sanitize API URL: ignore empty values or the deprecated 'portfolio-backend-render' URL
-const rawApiUrl = import.meta.env.VITE_API_URL;
-const apiUrl =
-  rawApiUrl && !rawApiUrl.includes('portfolio-backend-render')
-    ? rawApiUrl
-    : (import.meta.env.DEV ? 'http://localhost:1268' : PRODUCTION_API);
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+const isDeprecated = rawApiUrl.includes('portfolio-backend-render');
+
+// If a valid custom VITE_API_URL is explicitly provided (and not deprecated), use it.
+// Otherwise, default to the live, working Render production backend.
+const apiUrl = rawApiUrl && !isDeprecated ? rawApiUrl : PRODUCTION_API;
 
 export const API_BASE_URL = apiUrl.replace(/\/+$/, '');
 export const CONTACT_ENDPOINT = `${API_BASE_URL}/contact`;
@@ -70,6 +71,8 @@ export async function sendContactMessage(data) {
         result?.errorDetails ||
         (response.status === 400
           ? 'Please review your entries and try again.'
+          : response.status === 404
+          ? 'Backend endpoint not found. Please check API URL configuration.'
           : response.status === 502 || response.status === 503
           ? 'The server is temporarily busy or waking up. Please try again in 30 seconds.'
           : 'Unable to send your message right now. Please try again later.');
