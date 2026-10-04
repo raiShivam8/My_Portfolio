@@ -11,7 +11,10 @@ dist
 dist-ssr
 *.local
 .env
-.env.*
+.env.local
+.env.*.local
+# Allow .env.production — contains only public backend URL, no secrets
+!.env.production
 !.env.example
 
 # Editor

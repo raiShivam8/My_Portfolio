@@ -1,21 +1,22 @@
 /**
  * Centralized API configuration and client helpers for the portfolio.
  *
- * IMPORTANT — Environment Variables Required:
- *   Vercel  → Set VITE_API_URL = your Render backend URL
- *             e.g. https://portfolio-contact-api.onrender.com
- *   Local   → Create frontend/.env.local with VITE_API_URL=http://localhost:1268
- *             (or leave unset — localhost:1268 is the automatic dev fallback)
+ * Environment setup:
+ *   Production (Vercel) → VITE_API_URL is set in frontend/.env.production
+ *                         (committed to git so Vercel picks it up at build time)
+ *   Local dev           → Create frontend/.env.local with:
+ *                         VITE_API_URL=http://localhost:1268
  */
 
-// Priority: VITE_API_URL env var → localhost in dev → hardcoded Render fallback
-export const API_BASE_URL =
+// VITE_API_URL is always defined via .env.production for production builds.
+// Falls back to localhost for local development if .env.local is not present.
+export const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV
-    ? 'http://localhost:1268'
-    : 'https://my-portfolio-svqe.onrender.com');
+  'http://localhost:1268'
+).replace(/\/+$/, '');
 
-export const CONTACT_ENDPOINT = `${API_BASE_URL.replace(/\/+$/, '')}/contact`;
+export const CONTACT_ENDPOINT = `${API_BASE_URL}/contact`;
+
 
 /**
  * Sends contact message payload to the backend Express service.
